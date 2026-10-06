@@ -18,6 +18,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: ShellCheck (scripts)
+        run: docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.11.0 scripts/*.sh
+
+      - name: actionlint (workflows do GitHub Actions)
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+
   contract:
     name: Contrato Express × Flask
     runs-on: ubuntu-latest
