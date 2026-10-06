@@ -95,6 +95,8 @@ CASES=(
   "POST|/tasks|yes|{\"title\":"
   "POST|/tasks|yes|[1,2]"
   "PATCH|/tasks/1|yes|{}"
+  "POST|/auth/login|no|$(printf '[%.0s' {1..33})$(printf ']%.0s' {1..33})"
+  "POST|/auth/login|no|$(printf '{\"a\":%.0s' {1..32})1$(printf '}%.0s' {1..32})"
   "POST|/auth/register|no|{\"name\":1,\"email\":\"x\",\"password\":\"123\"}"
   "POST|/auth/login|no|{\"email\":\"ninguem@example.com\",\"password\":\"errada\"}"
 )
