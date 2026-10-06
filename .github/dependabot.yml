@@ -1,0 +1,20 @@
+# Atualizações automáticas das actions usadas no CI. Cada pull request passa pelo CI.
+# As dependências das APIs são atualizadas nos repositórios de cada uma.
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(ci)"
