@@ -1,0 +1,22 @@
+# Sobe as duas APIs juntas:  docker compose up --build
+#
+# Reaproveita o docker-compose.yml de cada projeto (include), sem duplicar
+# configuração. Os repositórios precisam estar lado a lado:
+#
+#   Dev/
+#   ├── task-api-compose/   ← esta pasta
+#   ├── task-api-express/
+#   └── task-api-flask/
+#
+# As variáveis (inclusive o JWT_SECRET) vêm do .env DESTA pasta e valem para as
+# duas APIs. Mesmo com o segredo em comum, um token emitido por uma API é
+# recusado pela outra: cada uma tem seu próprio banco de usuários e confere o
+# emissor do token (campo "iss").
+
+name: task-api
+
+include:
+  - path: ../task-api-express/docker-compose.yml
+    env_file: .env
+  - path: ../task-api-flask/docker-compose.yml
+    env_file: .env
