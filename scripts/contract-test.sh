@@ -17,6 +17,13 @@ failures=0
 pass() { echo "  ✅ $1"; }
 fail() { echo "  ❌ $1"; failures=$((failures + 1)); }
 
+# check "<mensagem se passar>" "<mensagem se falhar>" <comando de teste...>
+check() {
+  local ok=$1 ko=$2
+  shift 2
+  if "$@"; then pass "$ok"; else fail "$ko"; fi
+}
+
 # Lê um campo do JSON da entrada padrão: json_field data.accessToken
 json_field() {
   node -e '
@@ -61,24 +68,24 @@ echo "Flask:   $FLASK_URL"
 echo
 echo "▶ Saúde"
 for name in Express Flask; do
-  url=$([ $name = Express ] && echo "$EXPRESS_URL" || echo "$FLASK_URL")
+  if [ "$name" = Express ]; then url=$EXPRESS_URL; else url=$FLASK_URL; fi
   status=$(call "$url" GET /health | tail -1)
-  [ "$status" = 200 ] && pass "$name /health → 200" || fail "$name /health → $status"
+  check "$name /health → 200" "$name /health → $status" [ "$status" = 200 ]
 done
 
 echo
 echo "▶ Cadastro"
 T_EXPRESS=$(register "$EXPRESS_URL" "contrato-$RUN_ID@example.com")
 T_FLASK=$(register "$FLASK_URL" "contrato-$RUN_ID@example.com")
-[ -n "$T_EXPRESS" ] && pass "Express emitiu token" || fail "Express não emitiu token"
-[ -n "$T_FLASK" ] && pass "Flask emitiu token" || fail "Flask não emitiu token"
+check "Express emitiu token" "Express não emitiu token" [ -n "$T_EXPRESS" ]
+check "Flask emitiu token" "Flask não emitiu token" [ -n "$T_FLASK" ]
 
 echo
 echo "▶ Tokens não valem na outra API"
 code=$(call "$EXPRESS_URL" GET /auth/me "$T_FLASK" | head -n -1 | json_field error.code)
-[ "$code" = INVALID_TOKEN ] && pass "token do Flask recusado pelo Express" || fail "Express aceitou token do Flask ($code)"
+check "token do Flask recusado pelo Express" "Express aceitou token do Flask ($code)" [ "$code" = INVALID_TOKEN ]
 code=$(call "$FLASK_URL" GET /auth/me "$T_EXPRESS" | head -n -1 | json_field error.code)
-[ "$code" = INVALID_TOKEN ] && pass "token do Express recusado pelo Flask" || fail "Flask aceitou token do Express ($code)"
+check "token do Express recusado pelo Flask" "Flask aceitou token do Express ($code)" [ "$code" = INVALID_TOKEN ]
 
 echo
 echo "▶ Mesmo contrato de erros"
