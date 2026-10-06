@@ -1,0 +1,2 @@
+# Scripts shell precisam de LF, mesmo quando o repositório é clonado no Windows.
+*.sh text eol=lf

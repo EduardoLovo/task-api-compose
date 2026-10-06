@@ -1,5 +1,7 @@
 # Task API — Compose
 
+[![CI](https://github.com/EduardoLovo/task-api-compose/actions/workflows/ci.yml/badge.svg)](https://github.com/EduardoLovo/task-api-compose/actions/workflows/ci.yml)
+
 Sobe as duas versões da API de tarefas juntas com Docker:
 
 | API | Repositório | Porta |
@@ -35,6 +37,18 @@ docker compose logs -f     # logs das duas (em JSON)
 docker compose down        # para e remove os containers (os dados ficam)
 docker compose down -v     # também apaga os bancos de dados (volumes)
 ```
+
+## Teste de contrato
+
+Com as duas APIs no ar, este script confere que elas respondem **igual** (status, `code` e `details` dos erros)
+e que o token de uma é recusado pela outra:
+
+```bash
+./scripts/contract-test.sh
+```
+
+Ele roda no CI a cada push, em pull requests e toda segunda-feira, já que mudanças nos repositórios das APIs
+não disparam o CI deste. Também dá para rodar manualmente pela aba **Actions → CI → Run workflow**.
 
 ## Como funciona
 

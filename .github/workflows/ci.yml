@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # Este repositório não percebe mudanças nos repos das APIs: roda toda segunda
+  # às 9h (horário de Brasília) para pegar divergências entre elas.
+  schedule:
+    - cron: "0 12 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Contrato Express × Flask
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Mesma estrutura de pastas do ambiente local (repositórios lado a lado).
+      - uses: actions/checkout@v7
+        with:
+          path: task-api-compose
+
+      - uses: actions/checkout@v7
+        with:
+          repository: EduardoLovo/Task-api-express
+          path: task-api-express
+
+      - uses: actions/checkout@v7
+        with:
+          repository: EduardoLovo/task-api-flask
+          path: task-api-flask
+
+      - name: Criar .env com segredo aleatório
+        working-directory: task-api-compose
+        run: |
+          cp .env.example .env
+          sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 48)/" .env
+
+      - name: Validar o docker-compose
+        working-directory: task-api-compose
+        run: docker compose config --quiet
+
+      - name: Subir as duas APIs e esperar o health check
+        working-directory: task-api-compose
+        run: docker compose up --build --detach --wait --wait-timeout 120
+
+      - name: Teste de contrato
+        working-directory: task-api-compose
+        run: ./scripts/contract-test.sh
+
+      - name: Encerramento controlado (SIGTERM → código 0)
+        working-directory: task-api-compose
+        run: |
+          docker compose stop
+          docker compose ps --all --format '{{.Service}}: {{.ExitCode}}'
+          ! docker compose ps --all --format '{{.ExitCode}}' | grep -qvx 0
+
+      - name: Logs das APIs
+        if: always()
+        working-directory: task-api-compose
+        run: docker compose logs --no-color || true
+
+      - name: Remover containers e volumes
+        if: always()
+        working-directory: task-api-compose
+        run: docker compose down --volumes || true
