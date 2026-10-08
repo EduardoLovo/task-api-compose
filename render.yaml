@@ -28,10 +28,11 @@ projects:
               # Segredo próprio desta API: cada uma tem o seu banco de usuários.
               - key: JWT_SECRET
                 generateValue: true
-              # Proxies do Render na frente da API. Conferir pelo log de acesso
-              # depois do primeiro deploy (veja o README).
+              # Saltos até a API no Render: Cloudflare → proxies internos (10.x).
+              # Medido pelo log de acesso em 2026-10-08: com 1, a API via IPs 10.x;
+              # com 3, o IP real do cliente, e um X-Forwarded-For forjado é ignorado.
               - key: TRUST_PROXY
-                value: "1"
+                value: "3"
               # Trocar pelo domínio do front quando ele estiver no ar.
               - key: CORS_ORIGIN
                 value: "*"
@@ -51,6 +52,6 @@ projects:
               - key: JWT_SECRET
                 generateValue: true
               - key: TRUST_PROXY
-                value: "1"
+                value: "3"
               - key: CORS_ORIGIN
                 value: "*"
