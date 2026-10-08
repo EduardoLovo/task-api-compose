@@ -69,14 +69,32 @@ mês são somadas entre todos os serviços: não use serviços que "pingam" a AP
 ### Conferir o `TRUST_PROXY`
 
 No Render, as requisições chegam por proxies. O `TRUST_PROXY` diz quantos deles a API deve atravessar para achar o IP
-real do cliente, que o rate limit usa. Para conferir o valor, depois do primeiro deploy:
+real do cliente, que o rate limit usa.
+
+**Valor atual: `3`** (Cloudflare e proxies internos do Render). Medido em 2026-10-08: com `1`, as APIs viam IPs
+internos `10.x` que mudavam a cada requisição; com `3`, viam o IP real e ignoravam um `X-Forwarded-For` forjado.
+O Render não documenta esse número, então vale conferir de novo se o comportamento mudar.
+
+**Conferência rápida, sem os logs:** o cabeçalho `RateLimit` informa quantas requisições restam (`r=`). Com o valor
+certo, ele cai de 1 em 1 em requisições seguidas, mesmo com IPs forjados:
 
 ```bash
-curl https://ifconfig.me                                                       # seu IP público
-curl -H "X-Forwarded-For: 1.2.3.4" https://task-api-express.onrender.com/tasks  # use a URL do seu serviço
+for ip in "" 1.2.3.4 5.6.7.8; do
+  curl -s -D - -o /dev/null ${ip:+-H "X-Forwarded-For: $ip"} https://task-api-express-2pva.onrender.com/tasks \
+    | grep -i '^ratelimit:'
+done
 ```
 
-Em seguida, veja a linha `"message":"Requisição"` em **Logs**, no painel do serviço:
+Se o `r=` pular ou voltar a subir, cada requisição está caindo num "balde" diferente: o valor está errado.
+
+**Conferência completa, pelos logs:** envie requisições marcadas (as APIs reaproveitam o `X-Request-Id`) e procure a
+marca em **Logs**, no painel do serviço:
+
+```bash
+curl -4 https://ifconfig.me                                         # seu IP público (IPv4)
+curl -H "X-Request-Id: sonda-1" -H "X-Forwarded-For: 1.2.3.4" \
+  https://task-api-express-2pva.onrender.com/tasks
+```
 
 | O campo `ip` mostra | Significa | Ação |
 |---|---|---|
