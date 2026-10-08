@@ -33,9 +33,11 @@ projects:
               # com 3, o IP real do cliente, e um X-Forwarded-For forjado é ignorado.
               - key: TRUST_PROXY
                 value: "3"
-              # Trocar pelo domínio do front quando ele estiver no ar.
+              # Front na Vercel: domínio de produção + URLs de preview (uma por deploy e por branch,
+              # todas terminando com o nome da conta). O * casa só letras, números e hífens, nunca
+              # um ponto, então não aceita domínios de outras contas.
               - key: CORS_ORIGIN
-                value: "*"
+                value: "https://task-app-angular-taupe.vercel.app,https://task-app-angular-*-eduardolovos-projects.vercel.app"
 
           - type: web
             name: task-api-flask
@@ -53,5 +55,6 @@ projects:
                 generateValue: true
               - key: TRUST_PROXY
                 value: "3"
+              # Mesmo valor do Express.
               - key: CORS_ORIGIN
-                value: "*"
+                value: "https://task-app-angular-taupe.vercel.app,https://task-app-angular-*-eduardolovos-projects.vercel.app"
