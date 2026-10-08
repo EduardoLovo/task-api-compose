@@ -1,0 +1,56 @@
+# Blueprint do Render: cria as duas APIs a partir do Dockerfile de cada repositório.
+# Aplicar em: Render → New → Blueprint → este repositório.
+# Referência: https://render.com/docs/blueprint-spec
+#
+# Plano free: o serviço dorme após 15 min sem acesso (acorda em ~1 min) e o disco é
+# temporário, então o banco SQLite começa vazio a cada deploy, reinício ou soneca.
+
+projects:
+  - name: Task API
+    environments:
+      - name: Production
+        services:
+          - type: web
+            name: task-api-express
+            runtime: docker
+            repo: https://github.com/EduardoLovo/Task-api-express
+            branch: main
+            plan: free
+            # Não há região na América do Sul; a costa leste dos EUA é a mais próxima.
+            region: virginia
+            healthCheckPath: /health
+            # Só faz o deploy depois que o CI do commit passar.
+            autoDeployTrigger: checksPass
+            envVars:
+              # Mesma porta do Dockerfile (e do HEALTHCHECK dele).
+              - key: PORT
+                value: "3000"
+              # Segredo próprio desta API: cada uma tem o seu banco de usuários.
+              - key: JWT_SECRET
+                generateValue: true
+              # Proxies do Render na frente da API. Conferir pelo log de acesso
+              # depois do primeiro deploy (veja o README).
+              - key: TRUST_PROXY
+                value: "1"
+              # Trocar pelo domínio do front quando ele estiver no ar.
+              - key: CORS_ORIGIN
+                value: "*"
+
+          - type: web
+            name: task-api-flask
+            runtime: docker
+            repo: https://github.com/EduardoLovo/task-api-flask
+            branch: main
+            plan: free
+            region: virginia
+            healthCheckPath: /health
+            autoDeployTrigger: checksPass
+            envVars:
+              - key: PORT
+                value: "5000"
+              - key: JWT_SECRET
+                generateValue: true
+              - key: TRUST_PROXY
+                value: "1"
+              - key: CORS_ORIGIN
+                value: "*"
