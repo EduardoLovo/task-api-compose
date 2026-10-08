@@ -50,6 +50,43 @@ e que o token de uma é recusado pela outra:
 Ele roda no CI a cada push, em pull requests e toda segunda-feira, já que mudanças nos repositórios das APIs
 não disparam o CI deste. Também dá para rodar manualmente pela aba **Actions → CI → Run workflow**.
 
+## Deploy no Render
+
+O [`render.yaml`](render.yaml) (*Blueprint*) cria as duas APIs no Render, cada uma a partir do `Dockerfile` do
+próprio repositório: projeto **Task API**, ambiente **Production**, plano **free**, região **virginia**.
+
+1. No Render: **New → Blueprint**, conecte o GitHub e escolha este repositório.
+2. Confira os dois serviços listados e clique em **Deploy Blueprint**.
+3. Cada API ganha um `JWT_SECRET` próprio, gerado pelo Render (cada uma tem o seu banco de usuários).
+
+Depois disso, cada push na `main` de uma API dispara o deploy dela, **só depois que o CI passar**
+(`autoDeployTrigger: checksPass`).
+
+**Limitações do plano free:** o serviço dorme após 15 minutos sem acesso e leva cerca de 1 minuto para acordar. O
+disco é temporário, então o banco SQLite começa vazio a cada deploy, reinício ou soneca. As 750 horas gratuitas por
+mês são somadas entre todos os serviços: não use serviços que "pingam" a API para mantê-la acordada.
+
+### Conferir o `TRUST_PROXY`
+
+No Render, as requisições chegam por proxies. O `TRUST_PROXY` diz quantos deles a API deve atravessar para achar o IP
+real do cliente, que o rate limit usa. Para conferir o valor, depois do primeiro deploy:
+
+```bash
+curl https://ifconfig.me                                                       # seu IP público
+curl -H "X-Forwarded-For: 1.2.3.4" https://task-api-express.onrender.com/tasks  # use a URL do seu serviço
+```
+
+Em seguida, veja a linha `"message":"Requisição"` em **Logs**, no painel do serviço:
+
+| O campo `ip` mostra | Significa | Ação |
+|---|---|---|
+| O seu IP público | Valor certo | Nada a fazer |
+| `1.2.3.4` | Alto demais: o cliente consegue forjar o IP | Diminuir o `TRUST_PROXY` |
+| Um IP interno (`10.x`, `172.x`...) | Baixo demais: todos os clientes parecem um só | Aumentar o `TRUST_PROXY` |
+
+Altere o valor no `render.yaml` e faça o merge. Uma mudança feita só no painel é sobrescrita na próxima
+sincronização do Blueprint.
+
 ## Como funciona
 
 - **Uma configuração, duas APIs**: as variáveis do `.env` desta pasta valem para as duas (`include` com `env_file`).
